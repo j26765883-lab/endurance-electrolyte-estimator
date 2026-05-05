@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts';
+import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, ReferenceLine, ResponsiveContainer } from 'recharts';
 import { calculatePhysiologyAtTime } from './math.js';
 
 // Sweat profiles based on Lara et al. (2016)
@@ -128,7 +128,7 @@ export default function App() {
             <h3 className="font-bold mb-2">How to use this tracker:</h3>
             <ul className="list-disc pl-5 space-y-1">
               <li><strong>Step 1:</strong> Enter your starting weight and the expected duration of your event.</li>
-              <li><strong>Step 2:</strong> Estimate your hourly sweat rate and planned fluid intake.</li>
+              <li><strong>Step 2:</strong> Estimate your average hourly sweat rate and fluid intake.</li>
               <li><strong>Step 3:</strong> Select a sweat sodium profile. If you have not been lab-tested, use the guide below the dropdown to estimate your profile.</li>
               <li><strong>Step 4:</strong> Adjust your hourly sodium intake to observe how it affects your estimated serum sodium levels, aiming to keep the trend safely between the hyponatremia and hypernatremia limits.</li>
             </ul>
@@ -169,7 +169,7 @@ export default function App() {
                 </div>
                 <hr />
                 <div>
-                  <label className="block text-sm font-medium mb-1">Sweat Rate (L/hr)</label>
+                  <label className="block text-sm font-medium mb-1">Avg Sweat Rate (L/hr)</label>
                   <input type="number" step="0.1" value={sweatRate} onChange={e => setSweatRate(Number(e.target.value))} className="w-full border rounded p-2 bg-slate-50" />
                   
                   {/* NEW: Sweat Rate Estimation Guide */}
@@ -230,11 +230,11 @@ export default function App() {
 
                 <hr />
                 <div>
-                  <label className="block text-sm font-medium mb-1">Fluid Intake (L/hr)</label>
+                  <label className="block text-sm font-medium mb-1">Avg Fluid Intake (L/hr)</label>
                   <input type="number" step="0.1" value={waterIntake} onChange={e => setWaterIntake(Number(e.target.value))} className="w-full border rounded p-2 bg-slate-50" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Sodium Intake (mg/hr)</label>
+                  <label className="block text-sm font-medium mb-1">Avg Sodium Intake (mg/hr)</label>
                   <input type="number" step="50" value={naIntake} onChange={e => setNaIntake(Number(e.target.value))} className="w-full border rounded p-2 bg-slate-50" />
                 </div>
               </div>
@@ -294,7 +294,6 @@ export default function App() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="time" type="number" ticks={xTicks} domain={[0, 'dataMax']} unit="h" />
                   <YAxis domain={[-4, 2]} />
-                  <Tooltip />
                   <ReferenceLine y={hypoLimit} stroke="red" strokeDasharray="3 3" label={`Hypohydration (${hypoLimit}%)`} />
                   <Line type="monotone" dataKey="weightChange" stroke="#3b82f6" strokeWidth={3} dot={false} />
                 </ComposedChart>
@@ -310,7 +309,6 @@ export default function App() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="time" type="number" ticks={xTicks} domain={[0, 'dataMax']} unit="h" />
                     <YAxis domain={[125, 155]} />
-                    <Tooltip />
                     <ReferenceLine y={hypoNaLimit} stroke="orange" strokeDasharray="3 3" label={`Hyponatremia (${hypoNaLimit})`} />
                     <ReferenceLine y={hyperNaLimit} stroke="orange" strokeDasharray="3 3" label={`Hypernatremia (${hyperNaLimit})`} />
                     
