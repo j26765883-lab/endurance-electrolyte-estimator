@@ -19,7 +19,9 @@ export function calculatePhysiologyAtTime(params, t) {
   const currentTBW = initialTBW + netWater;
   
   let serumNa = baselineNa;
-  if (currentTBW > 0) {
+  
+  // FIX: Run the formula if TBW > 0, OR if we need to propagate a NaN value
+  if (currentTBW > 0 || Number.isNaN(currentTBW)) {
     serumNa = (((baselineNa + 23.8) * initialTBW) + (1.03 * deltaE)) / currentTBW - 23.8;
   }
 

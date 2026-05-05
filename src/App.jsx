@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, ReferenceLine, ResponsiveContainer } from 'recharts';
+import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, ReferenceArea, ResponsiveContainer } from 'recharts';
 import { calculatePhysiologyAtTime } from './math.js';
 
 // Sweat profiles based on Lara et al. (2016)
@@ -33,13 +33,12 @@ export default function App() {
   
   const [copied, setCopied] = useState(false);
 
-  // Constants
+  // Constants for thresholds
   const hypoLimit = -2; 
   const hypoNaLimit = 135; 
   const hyperNaLimit = 145; 
 
   // --- URL SYNC EFFECT ---
-  // Updates the browser URL silently as the user types
   useEffect(() => {
     const params = new URLSearchParams();
     params.set('u', unit);
@@ -77,7 +76,6 @@ export default function App() {
   const chartData = useMemo(() => {
     const data = [];
     
-    // Safely parse state to handle empty strings while typing
     const nWeight = Number(weight) || 0;
     const nDuration = Number(duration) || 0;
     const nSweatRate = Number(sweatRate) || 0;
@@ -87,7 +85,6 @@ export default function App() {
     const nBaselineNa = Number(baselineNa) || 0;
     const nCustomSweatNa = Number(customSweatNa) || 0;
 
-    // Convert weight to lbs for the math engine if it's currently in kg
     const weightLbs = unit === 'kg' ? nWeight * 2.20462 : nWeight;
     const baseParams = { weightLbs, sweatRate: nSweatRate, waterIntake: nWaterIntake, naIntake: nNaIntake, tbwPct: nTbwPct, baselineNa: nBaselineNa };
 
@@ -129,6 +126,20 @@ export default function App() {
     return data;
   }, [weight, unit, duration, sweatRate, waterIntake, naIntake, tbwPct, baselineNa, profile, customSweatNa]);
 
+  const { hydYMin, sodYMin, sodYMax } = useMemo(() => {
+    if (!chartData || chartData.length === 0) return { hydYMin: -8, sodYMin: 120, sodYMax: 160 };
+    
+    const minWeight = Math.min(...chartData.map(d => d.weightChange));
+    const minSod = Math.min(...chartData.map(d => d.sodiumRange2SD ? d.sodiumRange2SD[0] : d.serumNa));
+    const maxSod = Math.max(...chartData.map(d => d.sodiumRange2SD ? d.sodiumRange2SD[1] : d.serumNa));
+    
+    return {
+      hydYMin: Math.min(-8, Math.floor(minWeight - 1)),
+      sodYMin: Math.min(120, Math.floor(minSod - 2)),
+      sodYMax: Math.max(160, Math.ceil(maxSod + 2))
+    };
+  }, [chartData]);
+
   const xTicks = useMemo(() => {
     const nDuration = Number(duration) || 0;
     let step = 0.5;
@@ -153,29 +164,44 @@ export default function App() {
         
         <header className="text-center mb-6">
           <h1 className="text-3xl font-bold text-slate-900">Endurance Electrolyte Estimator</h1>
-          <p className="text-slate-600 mt-2 mb-4">Model your hydration and sodium trends using normative athlete data.</p>
+          <p className="text-slate-600 mt-2 max-w-3xl mx-auto leading-relaxed">
+            This tool uses mathematical mass-balance models to help athletes visualize how their body weight and serum sodium levels might change during endurance events based on their individual parameters (sweat rate, fluid intake, sodium intake).
+          </p>
           
-          <button 
-            onClick={handleCopyLink} 
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 text-sm font-medium rounded-full shadow-sm border border-slate-200 transition-colors"
-          >
-            {copied ? (
-              <span className="text-emerald-600 font-bold">✓ Link Copied!</span>
-            ) : (
-              <>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                </svg>
-                Share / Bookmark Plan
-              </>
-            )}
-          </button>
+          <div className="flex flex-wrap justify-center items-center gap-3 mt-5">
+            <button 
+              onClick={handleCopyLink} 
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 text-sm font-medium rounded-full shadow-sm border border-slate-200 transition-colors"
+            >
+              {copied ? (
+                <span className="text-emerald-600 font-bold">✓ Link Copied!</span>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                  Share / Bookmark Plan
+                </>
+              )}
+            </button>
+            <a 
+              href="https://github.com/j26765883-lab/endurance-electrolyte-estimator" 
+              target="_blank" 
+              rel="noreferrer" 
+              className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium rounded-full shadow-sm transition-colors"
+            >
+              <svg fill="currentColor" viewBox="0 0 24 24" className="w-4 h-4">
+                <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd"></path>
+              </svg>
+              View on GitHub
+            </a>
+          </div>
         </header>
 
         {/* INSTRUCTIONS & DISCLAIMER */}
         <div className="space-y-4 mb-8">
-          <div className="bg-amber-50 text-amber-900 p-4 rounded-lg text-sm border border-amber-200 shadow-sm">
-            <strong>Medical Disclaimer:</strong> This application is for informational and educational purposes only. It uses mathematical mass-balance models to estimate physiological trends and is not intended to provide medical advice, diagnose, treat, cure, or prevent any condition. Always consult with a qualified healthcare professional or sports dietician before making changes to your hydration or nutrition strategies.
+          <div className="bg-amber-50 text-amber-900 p-4 rounded-lg text-sm border border-amber-200 shadow-sm leading-relaxed">
+            <strong>Medical Disclaimer:</strong> This application is for informational and educational purposes only. It uses mathematical mass-balance models to estimate physiological trends and is not intended to provide medical advice, diagnose, treat, cure, or prevent any condition. While informed by guidelines such as the <a href="https://journals.lww.com/acsm-msse/Fulltext/2007/02000/Exercise_and_Fluid_Replacement.22.aspx" target="_blank" rel="noreferrer" className="underline hover:text-amber-800 font-medium">ACSM Position Stand on Exercise and Fluid Replacement</a>, you should always consult with a qualified healthcare professional or sports dietician before making changes to your hydration or nutrition strategies.
           </div>
           
           <div className="bg-blue-50 text-blue-900 p-4 rounded-lg text-sm border border-blue-200 shadow-sm">
@@ -184,7 +210,7 @@ export default function App() {
               <li><strong>Step 1:</strong> Enter your starting weight and the expected duration of your event.</li>
               <li><strong>Step 2:</strong> Estimate your average hourly sweat rate and fluid intake.</li>
               <li><strong>Step 3:</strong> Select a sweat sodium profile. If you have not been lab-tested, use the guide below the dropdown to estimate your profile.</li>
-              <li><strong>Step 4:</strong> Adjust your hourly sodium intake to observe how it affects your estimated serum sodium levels, aiming to keep the trend safely between the hyponatremia and hypernatremia limits.</li>
+              <li><strong>Step 4:</strong> Adjust your hourly sodium intake to observe how it affects your estimated serum sodium levels, aiming to keep the trend safely out of the red and orange zones.</li>
             </ul>
           </div>
         </div>
@@ -226,7 +252,6 @@ export default function App() {
                   <label className="block text-sm font-medium mb-1">Avg Sweat Rate (L/hr)</label>
                   <input type="number" min="0" step="0.1" value={sweatRate} onChange={e => setSweatRate(e.target.value === '' ? '' : Number(e.target.value))} className="w-full border rounded p-2 bg-slate-50" />
                   
-                  {/* Sweat Rate Estimation Guide */}
                   <details className="mt-2 mb-4 group">
                     <summary className="text-xs font-medium text-blue-600 cursor-pointer hover:underline flex items-center outline-none">
                       How do I estimate my sweat rate?
@@ -244,7 +269,6 @@ export default function App() {
                   </details>
                 </div>
                 
-                {/* Sweat Profile Selector */}
                 <div className="bg-slate-50 p-3 rounded border border-slate-200">
                   <label className="block text-sm font-semibold mb-2">Sweat Sodium Profile</label>
                   <select 
@@ -344,11 +368,15 @@ export default function App() {
               <h3 className="text-sm font-semibold mb-4 text-center">Body Weight Change (%)</h3>
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 15 }}>
+                  {/* Color Zones with increased opacity and strokes */}
+                  <ReferenceArea y1={-2} y2={-4} fill="#eab308" fillOpacity={0.25} stroke="#ca8a04" strokeOpacity={0.5} strokeWidth={1} label={{ position: 'insideTopLeft', value: 'Mild Hypohydration', fill: '#a16207', fontSize: 11, fontWeight: 'bold' }} />
+                  <ReferenceArea y1={-4} y2={-6} fill="#f97316" fillOpacity={0.25} stroke="#ea580c" strokeOpacity={0.5} strokeWidth={1} label={{ position: 'insideTopLeft', value: 'Moderate Hypohydration', fill: '#c2410c', fontSize: 11, fontWeight: 'bold' }} />
+                  <ReferenceArea y1={-6} y2={hydYMin} fill="#ef4444" fillOpacity={0.25} stroke="#dc2626" strokeOpacity={0.5} strokeWidth={1} label={{ position: 'insideTopLeft', value: 'Severe Hypohydration', fill: '#b91c1c', fontSize: 11, fontWeight: 'bold' }} />
+                  
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="time" type="number" ticks={xTicks} domain={[0, 'dataMax']} unit="h" />
-                  {/* Dynamic bound for extreme drops, capped cleanly at 2 on the top */}
-                  <YAxis domain={[(dataMin) => Math.min(-4, Math.floor(dataMin - 1)), 2]} />
-                  <ReferenceLine y={hypoLimit} stroke="red" strokeDasharray="3 3" label={`Hypohydration (${hypoLimit}%)`} />
+                  <YAxis domain={[hydYMin, 2]} />
+                  
                   <Line type="monotone" dataKey="weightChange" stroke="#3b82f6" strokeWidth={3} dot={false} activeDot={false} />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -360,20 +388,30 @@ export default function App() {
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 15 }}>
+                    {/* Fixed Hyponatremia Zones */}
+                    <ReferenceArea y1={130} y2={135} fill="#eab308" fillOpacity={0.25} stroke="#ca8a04" strokeOpacity={0.5} strokeWidth={1} label={{ position: 'insideTopLeft', value: 'Mild Hyponatremia', fill: '#a16207', fontSize: 11, fontWeight: 'bold' }} />
+                    <ReferenceArea y1={125} y2={130} fill="#f97316" fillOpacity={0.25} stroke="#ea580c" strokeOpacity={0.5} strokeWidth={1} label={{ position: 'insideTopLeft', value: 'Moderate Hyponatremia', fill: '#c2410c', fontSize: 11, fontWeight: 'bold' }} />
+                    <ReferenceArea y1={sodYMin} y2={125} fill="#ef4444" fillOpacity={0.25} stroke="#dc2626" strokeOpacity={0.5} strokeWidth={1} label={{ position: 'insideTopLeft', value: 'Severe Hyponatremia', fill: '#b91c1c', fontSize: 11, fontWeight: 'bold' }} />
+                    
+                    {/* Fixed Hypernatremia Zones */}
+                    <ReferenceArea y1={145} y2={150} fill="#eab308" fillOpacity={0.25} stroke="#ca8a04" strokeOpacity={0.5} strokeWidth={1} label={{ position: 'insideBottomLeft', value: 'Mild Hypernatremia', fill: '#a16207', fontSize: 11, fontWeight: 'bold' }} />
+                    <ReferenceArea y1={150} y2={155} fill="#f97316" fillOpacity={0.25} stroke="#ea580c" strokeOpacity={0.5} strokeWidth={1} label={{ position: 'insideBottomLeft', value: 'Moderate Hypernatremia', fill: '#c2410c', fontSize: 11, fontWeight: 'bold' }} />
+                    <ReferenceArea y1={155} y2={sodYMax} fill="#ef4444" fillOpacity={0.25} stroke="#dc2626" strokeOpacity={0.5} strokeWidth={1} label={{ position: 'insideBottomLeft', value: 'Severe Hypernatremia', fill: '#b91c1c', fontSize: 11, fontWeight: 'bold' }} />
+                    
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="time" type="number" ticks={xTicks} domain={[0, 'dataMax']} unit="h" />
-                    {/* Dynamic bound perfectly frames extreme highs or lows without locking onto hardcoded numbers */}
-                    <YAxis domain={[(dataMin) => Math.min(125, Math.floor(dataMin - 2)), (dataMax) => Math.max(155, Math.ceil(dataMax + 2))]} />
-                    <ReferenceLine y={hypoNaLimit} stroke="orange" strokeDasharray="3 3" label={`Hyponatremia (${hypoNaLimit})`} />
-                    <ReferenceLine y={hyperNaLimit} stroke="orange" strokeDasharray="3 3" label={`Hypernatremia (${hyperNaLimit})`} />
+                    <YAxis domain={[sodYMin, sodYMax]} />
                     
                     {profile !== 'custom' && (
                       <>
-                        <Area type="monotone" dataKey="sodiumRange2SD" fill="#10b981" fillOpacity={0.15} stroke="none" activeDot={false} />
-                        <Area type="monotone" dataKey="sodiumRange1SD" fill="#10b981" fillOpacity={0.3} stroke="none" activeDot={false} />
+                        {/* 95% Range: Light Blue */}
+                        <Area type="monotone" dataKey="sodiumRange2SD" fill="#93c5fd" fillOpacity={0.4} stroke="none" activeDot={false} />
+                        {/* 68% Range: Medium Blue */}
+                        <Area type="monotone" dataKey="sodiumRange1SD" fill="#3b82f6" fillOpacity={0.5} stroke="none" activeDot={false} />
                       </>
                     )}
-                    <Line type="monotone" dataKey="serumNa" stroke="#10b981" strokeWidth={3} dot={false} activeDot={false} />
+                    {/* Mean Line: Dark Indigo/Blue */}
+                    <Line type="monotone" dataKey="serumNa" stroke="#1d4ed8" strokeWidth={3} dot={false} activeDot={false} />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -386,7 +424,7 @@ export default function App() {
                   <div className="space-y-3">
                     <div className="flex items-start gap-3">
                       <div className="w-8 shrink-0 flex justify-center mt-1.5">
-                        <div className="h-0.5 w-8 bg-[#10b981]"></div>
+                        <div className="h-0.5 w-8 bg-[#1d4ed8]"></div>
                       </div>
                       <p className="text-xs">
                         The solid line shows the <strong>average (mean)</strong> expected trend for athletes matching this profile.
@@ -395,7 +433,7 @@ export default function App() {
 
                     <div className="flex items-start gap-3">
                       <div className="w-8 shrink-0 flex justify-center mt-0.5">
-                        <div className="h-3 w-8 bg-[#10b981] opacity-30 rounded"></div>
+                        <div className="h-3 w-8 bg-[#3b82f6] opacity-50 rounded"></div>
                       </div>
                       <p className="text-xs">
                         The darker central area (±1 SD) shows the expected range for <strong>~68% of athletes</strong> matching this profile.
@@ -404,7 +442,7 @@ export default function App() {
 
                     <div className="flex items-start gap-3">
                       <div className="w-8 shrink-0 flex justify-center mt-0.5">
-                        <div className="h-3 w-8 bg-[#10b981] opacity-15 rounded"></div>
+                        <div className="h-3 w-8 bg-[#93c5fd] opacity-40 rounded"></div>
                       </div>
                       <p className="text-xs">
                         The wider, lighter area (±2 SD) captures the extreme variations, encompassing <strong>~95% of athletes</strong> in this profile.
@@ -414,7 +452,6 @@ export default function App() {
                 </div>
               )}
             </div>
-
           </div>
         </div>
 
@@ -456,8 +493,8 @@ export default function App() {
       {/* FOOTER & CITATIONS */}
       <footer className="max-w-6xl mx-auto w-full mt-12 pt-6 border-t border-slate-200 text-xs text-slate-500 space-y-4 pb-8">
         <div>
-          <strong className="block mb-2 text-slate-700">Scientific References:</strong>
-          <ul className="space-y-2 pl-4 list-disc">
+          <strong className="block mb-2 text-slate-700">Scientific References & Guidelines:</strong>
+          <ul className="space-y-2 pl-4 list-disc mt-2">
             <li>
               <strong>Mathematical Model:</strong> McCubbin, A. J. (2022). Modelling sodium requirements of athletes across a variety of exercise scenarios: Identifying when to test and target, or season to taste. <em>European Journal of Sport Science</em>, 23(6), 992-1000.
             </li>
@@ -466,6 +503,9 @@ export default function App() {
             </li>
             <li>
               <strong>Normative Database:</strong> Barnes, K. A., Anderson, M. L., Stofan, J. R., Dalrymple, K. J., Reimel, A. J., Roberts, T. J., ... & Baker, L. B. (2019). Normative data for sweating rate, sweat sodium concentration, and sweat sodium loss in athletes: An update and analysis by sport. <em>Journal of Sports Sciences</em>, 37(20), 2356-2366.
+            </li>
+            <li>
+              <strong>ACSM Guidelines:</strong> American College of Sports Medicine. (2007). Exercise and fluid replacement position stand. <em>Medicine & Science in Sports & Exercise</em>, 39(2), 377-390.
             </li>
           </ul>
         </div>

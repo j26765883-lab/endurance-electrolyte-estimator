@@ -1,10 +1,14 @@
 # Endurance Electrolyte Estimator
 
+[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen.svg)](https://j26765883-lab.github.io/endurance-electrolyte-estimator/)
+
 A React application designed to model and estimate physiological trends in hydration and sodium levels for endurance athletes. 
 
 ## Overview
 
 This tool uses mathematical mass-balance models to help athletes visualize how their body weight and serum sodium levels might change during endurance events based on their individual parameters (sweat rate, fluid intake, sodium intake, etc.). 
+
+![alt text](image.png)
 
 **Disclaimer:** This application is for informational and educational purposes only. It is not intended to provide medical advice, diagnose, treat, cure, or prevent any condition. Always consult with a qualified healthcare professional or sports dietician before making changes to your hydration or nutrition strategies.
 
@@ -15,6 +19,13 @@ This tool uses mathematical mass-balance models to help athletes visualize how t
 - **Interactive Charts:** Visualize body weight change and estimated serum sodium levels over time using Recharts.
 - **Advanced Assumptions:** Fine-tune the model with total body water percentage and baseline serum sodium level.
 - **Visual Warnings:** Highlights potential hypohydration, hyponatremia, and hypernatremia risks based on standard thresholds.
+
+## How to Use This Tool
+
+1. **Step 1:** Enter your starting weight and the expected duration of your event.
+2. **Step 2:** Estimate your average hourly sweat rate and fluid intake.
+3. **Step 3:** Select a sweat sodium profile. If you have not been lab-tested, use the guide below the dropdown to estimate your profile.
+4. **Step 4:** Adjust your hourly sodium intake to observe how it affects your estimated serum sodium levels, aiming to keep the trend safely out of the red and orange zones.
 
 ## Understanding the Conditions
 
@@ -39,6 +50,7 @@ The mathematical models and normative data used in this application are based on
 - **Mathematical Model:** McCubbin, A. J. (2022). Modelling sodium requirements of athletes across a variety of exercise scenarios: Identifying when to test and target, or season to taste. *European Journal of Sport Science*, 23(6), 992-1000.
 - **Sweat Profiles:** Lara, B., Gallo-Salazar, C., Puente, C., Areces, F., Salinero, J. J., & Del Coso, J. (2016). Interindividual variability in sweat electrolyte concentration in marathoners. *Journal of the International Society of Sports Nutrition*, 13.
 - **Normative Database:** Barnes, K. A., Anderson, M. L., Stofan, J. R., Dalrymple, K. J., Reimel, A. J., Roberts, T. J., ... & Baker, L. B. (2019). Normative data for sweating rate, sweat sodium concentration, and sweat sodium loss in athletes: An update and analysis by sport. *Journal of Sports Sciences*, 37(20), 2356-2366.
+- **ACSM Guidelines:** American College of Sports Medicine. (2007). Exercise and fluid replacement position stand. *Medicine & Science in Sports & Exercise*, 39(2), 377-390.
 
 ## Technologies Used
 
@@ -58,5 +70,17 @@ The mathematical models and normative data used in this application are based on
 
 1. Clone the repository:
    ```bash
-   git clone [https://github.com/](https://github.com/j26765883-lab/endurance-electrolyte-estimator.git)
+   git clone [https://github.com/j26765883-lab/endurance-electrolyte-estimator.git](https://github.com/j26765883-lab/endurance-electrolyte-estimator.git)
    cd endurance-electrolyte-estimator
+Install dependencies:
+
+2. Install dependencies:
+   '''bash
+   npm install
+
+3. Start the development server:
+   '''bash
+   npm run dev
+
+### License
+This project is open-source and available under the MIT License.
