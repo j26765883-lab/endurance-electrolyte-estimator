@@ -1,9 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, ReferenceLine, ResponsiveContainer } from 'recharts';
 import { calculatePhysiologyAtTime } from './math.js';
 
 // Sweat profiles based on Lara et al. (2016)
-// Reordered by concentration (Low -> Typical -> Salty -> Custom)
 const SWEAT_PROFILES = {
   low: { mean: 21.4, sd: 6.4, label: 'Low-Salt Sweater (21.4 ± 6.4 mmol/L)' },
   typical: { mean: 43.2, sd: 8.8, label: 'Typical Sweater (43.2 ± 8.8 mmol/L)' },
@@ -11,64 +10,104 @@ const SWEAT_PROFILES = {
   custom: { mean: null, sd: null, label: 'Custom Lab Result' }
 };
 
-export default function App() {
-  // --- STATE: Athlete Inputs ---
-  const [unit, setUnit] = useState('lbs');
-  const [weight, setWeight] = useState(180);
-  const [duration, setDuration] = useState(24);
-  const [sweatRate, setSweatRate] = useState(0.8);
-  const [waterIntake, setWaterIntake] = useState(0.8); // Matching sweat rate
-  const [naIntake, setNaIntake] = useState(500);
-  
-  // State for Fan Chart Profiles
-  const [profile, setProfile] = useState('typical');
-  const [customSweatNa, setCustomSweatNa] = useState(1000); // Only used if profile === 'custom'
+// Helper function to pull parameters from the URL
+const getParam = (key, defaultVal) => {
+  const val = new URLSearchParams(window.location.search).get(key);
+  return val !== null ? val : defaultVal;
+};
 
-  // --- STATE: Advanced Assumptions ---
-  const [tbwPct, setTbwPct] = useState(60); 
-  const [baselineNa, setBaselineNa] = useState(140); 
-  const [hypoLimit, setHypoLimit] = useState(-2); 
-  const [hypoNaLimit, setHypoNaLimit] = useState(135); 
-  const [hyperNaLimit, setHyperNaLimit] = useState(145); 
+export default function App() {
+  // --- STATE: Athlete Inputs (Initialized from URL if present) ---
+  const [unit, setUnit] = useState(() => getParam('u', 'lbs'));
+  const [weight, setWeight] = useState(() => getParam('w', 180));
+  const [duration, setDuration] = useState(() => getParam('d', 24));
+  const [sweatRate, setSweatRate] = useState(() => getParam('sr', 0.8));
+  const [waterIntake, setWaterIntake] = useState(() => getParam('wi', 0.8));
+  const [naIntake, setNaIntake] = useState(() => getParam('ni', 500));
+  
+  const [profile, setProfile] = useState(() => getParam('p', 'typical'));
+  const [customSweatNa, setCustomSweatNa] = useState(() => getParam('c', 1000));
+
+  const [tbwPct, setTbwPct] = useState(() => getParam('tbw', 60)); 
+  const [baselineNa, setBaselineNa] = useState(() => getParam('bna', 140)); 
+  
+  const [copied, setCopied] = useState(false);
+
+  // Constants
+  const hypoLimit = -2; 
+  const hypoNaLimit = 135; 
+  const hyperNaLimit = 145; 
+
+  // --- URL SYNC EFFECT ---
+  // Updates the browser URL silently as the user types
+  useEffect(() => {
+    const params = new URLSearchParams();
+    params.set('u', unit);
+    if (weight !== '') params.set('w', weight);
+    if (duration !== '') params.set('d', duration);
+    if (sweatRate !== '') params.set('sr', sweatRate);
+    if (waterIntake !== '') params.set('wi', waterIntake);
+    if (naIntake !== '') params.set('ni', naIntake);
+    params.set('p', profile);
+    if (profile === 'custom' && customSweatNa !== '') params.set('c', customSweatNa);
+    if (tbwPct !== '') params.set('tbw', tbwPct);
+    if (baselineNa !== '') params.set('bna', baselineNa);
+
+    window.history.replaceState(null, '', `?${params.toString()}`);
+  }, [unit, weight, duration, sweatRate, waterIntake, naIntake, profile, customSweatNa, tbwPct, baselineNa]);
 
   // --- HANDLERS ---
   const handleUnitToggle = (newUnit) => {
     if (unit === newUnit) return;
     if (newUnit === 'kg') {
-      setWeight(+(weight / 2.20462).toFixed(1));
+      setWeight(+(Number(weight) / 2.20462).toFixed(1));
     } else {
-      setWeight(+(weight * 2.20462).toFixed(1));
+      setWeight(+(Number(weight) * 2.20462).toFixed(1));
     }
     setUnit(newUnit);
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
   };
 
   // --- MATH LOGIC ---
   const chartData = useMemo(() => {
     const data = [];
-    // Convert weight to lbs for the math engine if it's currently in kg
-    const weightLbs = unit === 'kg' ? weight * 2.20462 : weight;
-    const baseParams = { weightLbs, sweatRate, waterIntake, naIntake, tbwPct, baselineNa };
+    
+    // Safely parse state to handle empty strings while typing
+    const nWeight = Number(weight) || 0;
+    const nDuration = Number(duration) || 0;
+    const nSweatRate = Number(sweatRate) || 0;
+    const nWaterIntake = Number(waterIntake) || 0;
+    const nNaIntake = Number(naIntake) || 0;
+    const nTbwPct = Number(tbwPct) || 0;
+    const nBaselineNa = Number(baselineNa) || 0;
+    const nCustomSweatNa = Number(customSweatNa) || 0;
 
-    for (let t = 0; t <= duration; t += 0.5) {
+    // Convert weight to lbs for the math engine if it's currently in kg
+    const weightLbs = unit === 'kg' ? nWeight * 2.20462 : nWeight;
+    const baseParams = { weightLbs, sweatRate: nSweatRate, waterIntake: nWaterIntake, naIntake: nNaIntake, tbwPct: nTbwPct, baselineNa: nBaselineNa };
+
+    for (let t = 0; t <= nDuration; t += 0.5) {
       if (profile === 'custom') {
-        const result = calculatePhysiologyAtTime({ ...baseParams, sweatNa: customSweatNa }, t);
+        const result = calculatePhysiologyAtTime({ ...baseParams, sweatNa: nCustomSweatNa }, t);
         data.push({ 
           ...result, 
           sodiumRange1SD: [result.serumNa, result.serumNa],
           sodiumRange2SD: [result.serumNa, result.serumNa]
         });
       } else {
-        // Convert mmol/L to mg/L for the math function (1 mmol = 23 mg)
         const meanMg = SWEAT_PROFILES[profile].mean * 23;
         const sdMg = SWEAT_PROFILES[profile].sd * 23;
 
         const meanResult = calculatePhysiologyAtTime({ ...baseParams, sweatNa: meanMg }, t);
         
-        // 1 Standard Deviation (±1 SD)
         const sd1HighLoss = calculatePhysiologyAtTime({ ...baseParams, sweatNa: meanMg + sdMg }, t).serumNa;
         const sd1LowLoss = calculatePhysiologyAtTime({ ...baseParams, sweatNa: meanMg - sdMg }, t).serumNa;
 
-        // 2 Standard Deviations (±2 SD)
         const sd2HighLoss = calculatePhysiologyAtTime({ ...baseParams, sweatNa: meanMg + (sdMg * 2) }, t).serumNa;
         const sd2LowLoss = calculatePhysiologyAtTime({ ...baseParams, sweatNa: meanMg - (sdMg * 2) }, t).serumNa;
 
@@ -76,7 +115,6 @@ export default function App() {
           time: t,
           weightChange: meanResult.weightChange,
           serumNa: meanResult.serumNa,
-          // Recharts Area expects [bottom, top] coordinates
           sodiumRange1SD: [
             Math.min(sd1HighLoss, sd1LowLoss),
             Math.max(sd1HighLoss, sd1LowLoss)
@@ -92,22 +130,22 @@ export default function App() {
   }, [weight, unit, duration, sweatRate, waterIntake, naIntake, tbwPct, baselineNa, profile, customSweatNa]);
 
   const xTicks = useMemo(() => {
+    const nDuration = Number(duration) || 0;
     let step = 0.5;
-    if (duration >= 24) step = 6;
-    else if (duration >= 16) step = 4;
-    else if (duration >= 8) step = 2;
-    else if (duration > 4) step = 1;
+    if (nDuration >= 24) step = 6;
+    else if (nDuration >= 16) step = 4;
+    else if (nDuration >= 8) step = 2;
+    else if (nDuration > 4) step = 1;
 
     const ticks = [];
-    for (let i = 0; i <= duration; i += step) ticks.push(i);
-    if (ticks[ticks.length - 1] !== duration) ticks.push(duration);
+    for (let i = 0; i <= nDuration; i += step) ticks.push(i);
+    if (ticks[ticks.length - 1] !== nDuration) ticks.push(nDuration);
     return ticks;
   }, [duration]);
 
   const finalData = chartData[chartData.length - 1];
-  
-  // Calculate absolute weight change based on the final percentage
-  const finalAbsoluteWeight = finalData ? ((finalData.weightChange / 100) * weight).toFixed(1) : 0;
+  const nWeight = Number(weight) || 0;
+  const finalAbsoluteWeight = finalData ? ((finalData.weightChange / 100) * nWeight).toFixed(1) : 0;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans text-slate-800 flex flex-col">
@@ -115,7 +153,23 @@ export default function App() {
         
         <header className="text-center mb-6">
           <h1 className="text-3xl font-bold text-slate-900">Endurance Electrolyte Estimator</h1>
-          <p className="text-slate-600 mt-2">Model your hydration and sodium trends using normative athlete data.</p>
+          <p className="text-slate-600 mt-2 mb-4">Model your hydration and sodium trends using normative athlete data.</p>
+          
+          <button 
+            onClick={handleCopyLink} 
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 text-sm font-medium rounded-full shadow-sm border border-slate-200 transition-colors"
+          >
+            {copied ? (
+              <span className="text-emerald-600 font-bold">✓ Link Copied!</span>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                Share / Bookmark Plan
+              </>
+            )}
+          </button>
         </header>
 
         {/* INSTRUCTIONS & DISCLAIMER */}
@@ -161,18 +215,18 @@ export default function App() {
                       </button>
                     </div>
                   </div>
-                  <input type="number" value={weight} onChange={e => setWeight(Number(e.target.value))} className="w-full border rounded p-2 bg-slate-50" />
+                  <input type="number" min="0" value={weight} onChange={e => setWeight(e.target.value === '' ? '' : Number(e.target.value))} className="w-full border rounded p-2 bg-slate-50" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Duration (hours)</label>
-                  <input type="number" step="0.5" value={duration} onChange={e => setDuration(Number(e.target.value))} className="w-full border rounded p-2 bg-slate-50" />
+                  <input type="number" min="0" step="0.5" value={duration} onChange={e => setDuration(e.target.value === '' ? '' : Number(e.target.value))} className="w-full border rounded p-2 bg-slate-50" />
                 </div>
                 <hr />
                 <div>
                   <label className="block text-sm font-medium mb-1">Avg Sweat Rate (L/hr)</label>
-                  <input type="number" step="0.1" value={sweatRate} onChange={e => setSweatRate(Number(e.target.value))} className="w-full border rounded p-2 bg-slate-50" />
+                  <input type="number" min="0" step="0.1" value={sweatRate} onChange={e => setSweatRate(e.target.value === '' ? '' : Number(e.target.value))} className="w-full border rounded p-2 bg-slate-50" />
                   
-                  {/* NEW: Sweat Rate Estimation Guide */}
+                  {/* Sweat Rate Estimation Guide */}
                   <details className="mt-2 mb-4 group">
                     <summary className="text-xs font-medium text-blue-600 cursor-pointer hover:underline flex items-center outline-none">
                       How do I estimate my sweat rate?
@@ -190,7 +244,7 @@ export default function App() {
                   </details>
                 </div>
                 
-                {/* Sweat Profile Selector with Estimation Guide */}
+                {/* Sweat Profile Selector */}
                 <div className="bg-slate-50 p-3 rounded border border-slate-200">
                   <label className="block text-sm font-semibold mb-2">Sweat Sodium Profile</label>
                   <select 
@@ -206,7 +260,7 @@ export default function App() {
                   {profile === 'custom' ? (
                     <div className="mt-3">
                       <label className="block text-xs font-medium mb-1">Custom Concentration (mg/L)</label>
-                      <input type="number" step="50" value={customSweatNa} onChange={e => setCustomSweatNa(Number(e.target.value))} className="w-full border rounded p-2 bg-white" />
+                      <input type="number" min="0" step="50" value={customSweatNa} onChange={e => setCustomSweatNa(e.target.value === '' ? '' : Number(e.target.value))} className="w-full border rounded p-2 bg-white" />
                     </div>
                   ) : (
                     <p className="text-xs text-slate-500 italic">
@@ -214,7 +268,6 @@ export default function App() {
                     </p>
                   )}
 
-                  {/* Collapsible Estimation Guide */}
                   <details className="mt-3 group">
                     <summary className="text-xs font-medium text-blue-600 cursor-pointer hover:underline flex items-center outline-none">
                       How do I estimate my profile?
@@ -231,11 +284,11 @@ export default function App() {
                 <hr />
                 <div>
                   <label className="block text-sm font-medium mb-1">Avg Fluid Intake (L/hr)</label>
-                  <input type="number" step="0.1" value={waterIntake} onChange={e => setWaterIntake(Number(e.target.value))} className="w-full border rounded p-2 bg-slate-50" />
+                  <input type="number" min="0" step="0.1" value={waterIntake} onChange={e => setWaterIntake(e.target.value === '' ? '' : Number(e.target.value))} className="w-full border rounded p-2 bg-slate-50" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Avg Sodium Intake (mg/hr)</label>
-                  <input type="number" step="50" value={naIntake} onChange={e => setNaIntake(Number(e.target.value))} className="w-full border rounded p-2 bg-slate-50" />
+                  <input type="number" min="0" step="50" value={naIntake} onChange={e => setNaIntake(e.target.value === '' ? '' : Number(e.target.value))} className="w-full border rounded p-2 bg-slate-50" />
                 </div>
               </div>
             </div>
@@ -249,11 +302,11 @@ export default function App() {
                 <div className="space-y-4 pt-4">
                   <div>
                     <label className="block text-xs font-medium text-slate-500 mb-1">Total Body Water (%)</label>
-                    <input type="number" value={tbwPct} onChange={e => setTbwPct(Number(e.target.value))} className="w-full border rounded p-2 text-sm bg-slate-50" />
+                    <input type="number" min="0" max="100" value={tbwPct} onChange={e => setTbwPct(e.target.value === '' ? '' : Number(e.target.value))} className="w-full border rounded p-2 text-sm bg-slate-50" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-500 mb-1">Baseline Serum Na (mmol/L)</label>
-                    <input type="number" value={baselineNa} onChange={e => setBaselineNa(Number(e.target.value))} className="w-full border rounded p-2 text-sm bg-slate-50" />
+                    <input type="number" min="0" value={baselineNa} onChange={e => setBaselineNa(e.target.value === '' ? '' : Number(e.target.value))} className="w-full border rounded p-2 text-sm bg-slate-50" />
                   </div>
                 </div>
               </details>
@@ -293,7 +346,8 @@ export default function App() {
                 <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 15 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="time" type="number" ticks={xTicks} domain={[0, 'dataMax']} unit="h" />
-                  <YAxis domain={[-4, 2]} />
+                  {/* Dynamic bound for extreme drops, capped cleanly at 2 on the top */}
+                  <YAxis domain={[(dataMin) => Math.min(-4, Math.floor(dataMin - 1)), 2]} />
                   <ReferenceLine y={hypoLimit} stroke="red" strokeDasharray="3 3" label={`Hypohydration (${hypoLimit}%)`} />
                   <Line type="monotone" dataKey="weightChange" stroke="#3b82f6" strokeWidth={3} dot={false} activeDot={false} />
                 </ComposedChart>
@@ -308,20 +362,17 @@ export default function App() {
                   <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 15 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="time" type="number" ticks={xTicks} domain={[0, 'dataMax']} unit="h" />
-                    <YAxis domain={[125, 155]} />
+                    {/* Dynamic bound perfectly frames extreme highs or lows without locking onto hardcoded numbers */}
+                    <YAxis domain={[(dataMin) => Math.min(125, Math.floor(dataMin - 2)), (dataMax) => Math.max(155, Math.ceil(dataMax + 2))]} />
                     <ReferenceLine y={hypoNaLimit} stroke="orange" strokeDasharray="3 3" label={`Hyponatremia (${hypoNaLimit})`} />
                     <ReferenceLine y={hyperNaLimit} stroke="orange" strokeDasharray="3 3" label={`Hypernatremia (${hyperNaLimit})`} />
                     
-                    {/* The Fan Chart Areas */}
                     {profile !== 'custom' && (
                       <>
-                        {/* +/- 2 SD Range (95% of runners) - Lighter */}
                         <Area type="monotone" dataKey="sodiumRange2SD" fill="#10b981" fillOpacity={0.15} stroke="none" activeDot={false} />
-                        {/* +/- 1 SD Range (68% of runners) - Darker */}
                         <Area type="monotone" dataKey="sodiumRange1SD" fill="#10b981" fillOpacity={0.3} stroke="none" activeDot={false} />
                       </>
                     )}
-                    {/* The Mean Line */}
                     <Line type="monotone" dataKey="serumNa" stroke="#10b981" strokeWidth={3} dot={false} activeDot={false} />
                   </ComposedChart>
                 </ResponsiveContainer>
@@ -367,7 +418,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* NEW: EDUCATIONAL RESOURCES SECTION */}
+        {/* EDUCATIONAL RESOURCES SECTION */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mt-8">
           <h2 className="font-semibold text-lg border-b pb-2 mb-4">Understanding the Conditions</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
