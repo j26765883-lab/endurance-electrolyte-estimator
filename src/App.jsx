@@ -114,7 +114,7 @@ export default function App() {
       <div className="max-w-6xl mx-auto space-y-6 flex-grow w-full">
         
         <header className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-slate-900">Endurance Electryolyte Estimator</h1>
+          <h1 className="text-3xl font-bold text-slate-900">Endurance Electrolyte Estimator</h1>
           <p className="text-slate-600 mt-2">Model your hydration and sodium trends using normative athlete data.</p>
         </header>
 
