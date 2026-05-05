@@ -295,7 +295,7 @@ export default function App() {
                   <XAxis dataKey="time" type="number" ticks={xTicks} domain={[0, 'dataMax']} unit="h" />
                   <YAxis domain={[-4, 2]} />
                   <ReferenceLine y={hypoLimit} stroke="red" strokeDasharray="3 3" label={`Hypohydration (${hypoLimit}%)`} />
-                  <Line type="monotone" dataKey="weightChange" stroke="#3b82f6" strokeWidth={3} dot={false} />
+                  <Line type="monotone" dataKey="weightChange" stroke="#3b82f6" strokeWidth={3} dot={false} activeDot={false} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -316,36 +316,49 @@ export default function App() {
                     {profile !== 'custom' && (
                       <>
                         {/* +/- 2 SD Range (95% of runners) - Lighter */}
-                        <Area type="monotone" dataKey="sodiumRange2SD" fill="#10b981" fillOpacity={0.15} stroke="none" />
+                        <Area type="monotone" dataKey="sodiumRange2SD" fill="#10b981" fillOpacity={0.15} stroke="none" activeDot={false} />
                         {/* +/- 1 SD Range (68% of runners) - Darker */}
-                        <Area type="monotone" dataKey="sodiumRange1SD" fill="#10b981" fillOpacity={0.3} stroke="none" />
+                        <Area type="monotone" dataKey="sodiumRange1SD" fill="#10b981" fillOpacity={0.3} stroke="none" activeDot={false} />
                       </>
                     )}
                     {/* The Mean Line */}
-                    <Line type="monotone" dataKey="serumNa" stroke="#10b981" strokeWidth={3} dot={false} />
+                    <Line type="monotone" dataKey="serumNa" stroke="#10b981" strokeWidth={3} dot={false} activeDot={false} />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
 
               {/* Statistical Legend */}
               {profile !== 'custom' && (
-                <div className="mt-6 text-sm text-slate-600 bg-slate-50 p-4 rounded-lg border border-slate-100 flex items-start gap-3">
-                  <div className="flex flex-col gap-2 min-w-[60px] mt-2 items-center">
-                    <div className="h-0.5 w-8 bg-[#10b981]"></div>
-                    <div className="h-3 w-8 bg-[#10b981] opacity-30 rounded"></div>
-                    <div className="h-3 w-8 bg-[#10b981] opacity-15 rounded"></div>
-                  </div>
-                  <div>
-                    <p className="mb-1"><strong>Interpreting the Chart:</strong></p>
-                    <p className="text-xs mb-1">
-                      The solid line shows the <strong>average (mean)</strong> expected trend for athletes matching this profile.
-                    </p>
-                    <p className="text-xs mb-1">
-                      The darker central area (±1 SD) shows the expected range for <strong>~68% of athletes</strong> matching this profile.
-                    </p>
-                    <p className="text-xs">
-                      The wider, lighter area (±2 SD) captures the extreme variations, encompassing <strong>~95% of athletes</strong> in this profile.
-                    </p>
+                <div className="mt-6 text-sm text-slate-600 bg-slate-50 p-4 rounded-lg border border-slate-100">
+                  <p className="mb-3"><strong>Interpreting the Chart:</strong></p>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 shrink-0 flex justify-center mt-1.5">
+                        <div className="h-0.5 w-8 bg-[#10b981]"></div>
+                      </div>
+                      <p className="text-xs">
+                        The solid line shows the <strong>average (mean)</strong> expected trend for athletes matching this profile.
+                      </p>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 shrink-0 flex justify-center mt-0.5">
+                        <div className="h-3 w-8 bg-[#10b981] opacity-30 rounded"></div>
+                      </div>
+                      <p className="text-xs">
+                        The darker central area (±1 SD) shows the expected range for <strong>~68% of athletes</strong> matching this profile.
+                      </p>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 shrink-0 flex justify-center mt-0.5">
+                        <div className="h-3 w-8 bg-[#10b981] opacity-15 rounded"></div>
+                      </div>
+                      <p className="text-xs">
+                        The wider, lighter area (±2 SD) captures the extreme variations, encompassing <strong>~95% of athletes</strong> in this profile.
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
