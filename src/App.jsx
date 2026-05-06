@@ -201,7 +201,7 @@ export default function App() {
         {/* INSTRUCTIONS & DISCLAIMER */}
         <div className="space-y-4 mb-8">
           <div className="bg-amber-50 text-amber-900 p-4 rounded-lg text-sm border border-amber-200 shadow-sm leading-relaxed">
-            <strong>Medical Disclaimer:</strong> This application is for informational and educational purposes only. It uses mathematical mass-balance models to estimate physiological trends and is not intended to provide medical advice, diagnose, treat, cure, or prevent any condition. While informed by guidelines such as the <a href="https://journals.lww.com/acsm-msse/Fulltext/2007/02000/Exercise_and_Fluid_Replacement.22.aspx" target="_blank" rel="noreferrer" className="underline hover:text-amber-800 font-medium">ACSM Position Stand on Exercise and Fluid Replacement</a>, you should always consult with a qualified healthcare professional or sports dietician before making changes to your hydration or nutrition strategies.
+            <strong>Medical Disclaimer:</strong> This application is for informational and educational purposes only. It uses mathematical mass-balance models to estimate physiological trends and is not intended to provide medical advice, diagnose, treat, cure, or prevent any condition. Always consult with a qualified healthcare professional or sports dietician before making changes to your hydration or nutrition strategies.
           </div>
           
           <div className="bg-blue-50 text-blue-900 p-4 rounded-lg text-sm border border-blue-200 shadow-sm">
