@@ -72,14 +72,13 @@ The mathematical models and normative data used in this application are based on
    ```bash
    git clone [https://github.com/j26765883-lab/endurance-electrolyte-estimator.git](https://github.com/j26765883-lab/endurance-electrolyte-estimator.git)
    cd endurance-electrolyte-estimator
-Install dependencies:
 
 2. Install dependencies:
-   '''bash
+   ```bash
    npm install
 
 3. Start the development server:
-   '''bash
+   ```bash
    npm run dev
 
 ### License
