@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, ReferenceArea, ResponsiveContainer } from 'recharts';
 import { calculatePhysiologyAtTime } from './math.js';
+import { getParam } from './utils.js';
 
 // Sweat profiles based on Lara et al. (2016)
 const SWEAT_PROFILES = {
@@ -10,26 +11,20 @@ const SWEAT_PROFILES = {
   custom: { mean: null, sd: null, label: 'Custom Lab Result' }
 };
 
-// Helper function to pull parameters from the URL
-const getParam = (key, defaultVal) => {
-  const val = new URLSearchParams(window.location.search).get(key);
-  return val !== null ? val : defaultVal;
-};
-
 export default function App() {
   // --- STATE: Athlete Inputs (Initialized from URL if present) ---
-  const [unit, setUnit] = useState(() => getParam('u', 'lbs'));
-  const [weight, setWeight] = useState(() => getParam('w', 180));
-  const [duration, setDuration] = useState(() => getParam('d', 24));
-  const [sweatRate, setSweatRate] = useState(() => getParam('sr', 0.8));
-  const [waterIntake, setWaterIntake] = useState(() => getParam('wi', 0.8));
-  const [naIntake, setNaIntake] = useState(() => getParam('ni', 500));
+  const [unit, setUnit] = useState(() => getParam(window.location.search, 'u', 'lbs'));
+  const [weight, setWeight] = useState(() => getParam(window.location.search, 'w', 180));
+  const [duration, setDuration] = useState(() => getParam(window.location.search, 'd', 24));
+  const [sweatRate, setSweatRate] = useState(() => getParam(window.location.search, 'sr', 0.8));
+  const [waterIntake, setWaterIntake] = useState(() => getParam(window.location.search, 'wi', 0.8));
+  const [naIntake, setNaIntake] = useState(() => getParam(window.location.search, 'ni', 500));
   
-  const [profile, setProfile] = useState(() => getParam('p', 'typical'));
-  const [customSweatNa, setCustomSweatNa] = useState(() => getParam('c', 1000));
+  const [profile, setProfile] = useState(() => getParam(window.location.search, 'p', 'typical'));
+  const [customSweatNa, setCustomSweatNa] = useState(() => getParam(window.location.search, 'c', 1000));
 
-  const [tbwPct, setTbwPct] = useState(() => getParam('tbw', 60)); 
-  const [baselineNa, setBaselineNa] = useState(() => getParam('bna', 140)); 
+  const [tbwPct, setTbwPct] = useState(() => getParam(window.location.search, 'tbw', 60)); 
+  const [baselineNa, setBaselineNa] = useState(() => getParam(window.location.search, 'bna', 140)); 
   
   const [copied, setCopied] = useState(false);
 
@@ -135,6 +130,7 @@ export default function App() {
     
     return {
       hydYMin: Math.min(-8, Math.floor(minWeight - 1)),
+      hydYMax: Math.max(2, Math.ceil(maxWeight + 1)),
       sodYMin: Math.min(120, Math.floor(minSod - 2)),
       sodYMax: Math.max(160, Math.ceil(maxSod + 2))
     };
@@ -375,7 +371,7 @@ export default function App() {
                   
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="time" type="number" ticks={xTicks} domain={[0, 'dataMax']} unit="h" />
-                  <YAxis domain={[hydYMin, 2]} />
+                  <YAxis domain={[hydYMin, hydYMax]} />
                   
                   <Line type="monotone" dataKey="weightChange" stroke="#3b82f6" strokeWidth={3} dot={false} activeDot={false} />
                 </ComposedChart>

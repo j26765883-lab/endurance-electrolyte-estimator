@@ -20,7 +20,8 @@ export function calculatePhysiologyAtTime(params, t) {
   
   let serumNa = baselineNa;
   
-  // FIX: Run the formula if TBW > 0, OR if we need to propagate a NaN value
+  //1.03 is the slope (regression coefficient). It represents the impact that adding or losing a millimole of exchangeable electrolytes (Na⁺ + K⁺) has on serum sodium.
+  //23.8: This is the modified y-intercept. In physiological terms, this constant accounts for osmotically inactive sodium and potassium (e.g., sodium bound up in bone and cartilage) as well as the presence of other non-electrolyte osmoles in the blood.
   if (currentTBW > 0 || Number.isNaN(currentTBW)) {
     serumNa = (((baselineNa + 23.8) * initialTBW) + (1.03 * deltaE)) / currentTBW - 23.8;
   }
