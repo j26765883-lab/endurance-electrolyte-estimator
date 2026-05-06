@@ -121,10 +121,11 @@ export default function App() {
     return data;
   }, [weight, unit, duration, sweatRate, waterIntake, naIntake, tbwPct, baselineNa, profile, customSweatNa]);
 
-  const { hydYMin, sodYMin, sodYMax } = useMemo(() => {
+  const { hydYMin, hydYMax, sodYMin, sodYMax } = useMemo(() => {
     if (!chartData || chartData.length === 0) return { hydYMin: -8, sodYMin: 120, sodYMax: 160 };
     
     const minWeight = Math.min(...chartData.map(d => d.weightChange));
+    const maxWeight = Math.max(...chartData.map(d => d.weightChange));
     const minSod = Math.min(...chartData.map(d => d.sodiumRange2SD ? d.sodiumRange2SD[0] : d.serumNa));
     const maxSod = Math.max(...chartData.map(d => d.sodiumRange2SD ? d.sodiumRange2SD[1] : d.serumNa));
     
