@@ -363,7 +363,7 @@ export default function App() {
             {/* Hydration Chart */}
             <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 h-72">
               <h3 className="text-sm font-semibold mb-4 text-center">Body Weight Change (%)</h3>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" initialDimension={{width:1, height:1}}>
                 <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 15 }}>
                   {/* Color Zones with increased opacity and strokes */}
                   <ReferenceArea y1={-2} y2={-4} fill="#eab308" fillOpacity={0.25} stroke="#ca8a04" strokeOpacity={0.5} strokeWidth={1} label={{ position: 'insideTopLeft', value: 'Mild Hypohydration', fill: '#a16207', fontSize: 11, fontWeight: 'bold' }} />
@@ -383,7 +383,7 @@ export default function App() {
             <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
               <h3 className="text-sm font-semibold mb-4 text-center">Estimated Serum Sodium (mmol/L)</h3>
               <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" initialDimension={{width:1, height:1}}>
                   <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 15 }}>
                     {/* Fixed Hyponatremia Zones */}
                     <ReferenceArea y1={130} y2={135} fill="#eab308" fillOpacity={0.25} stroke="#ca8a04" strokeOpacity={0.5} strokeWidth={1} label={{ position: 'insideTopLeft', value: 'Mild Hyponatremia', fill: '#a16207', fontSize: 11, fontWeight: 'bold' }} />
