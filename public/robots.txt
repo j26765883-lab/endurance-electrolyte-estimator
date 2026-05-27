@@ -1,2 +1,5 @@
 User-agent: *
+Allow: /
+Disallow:
+
 Sitemap: https://j26765883-lab.github.io/endurance-electrolyte-estimator/sitemap.xml

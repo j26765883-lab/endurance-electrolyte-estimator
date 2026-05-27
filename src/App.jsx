@@ -160,7 +160,7 @@ export default function App() {
       <div className="max-w-6xl mx-auto space-y-6 flex-grow w-full">
         
         <header className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-slate-900">Endurance Electrolyte Estimator</h1>
+          <h1 className="text-3xl font-bold text-slate-900">Endurance Electrolyte & Hydration Calculator</h1>
           <p className="text-slate-600 mt-2 max-w-3xl mx-auto leading-relaxed">
             This tool uses mathematical mass-balance models to help athletes visualize how their body weight and serum sodium levels might change during endurance events based on their individual parameters (sweat rate, fluid intake, sodium intake).
           </p>
